@@ -3,6 +3,9 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/ProjectAIPylos.iml" filepath="$PROJECT_DIR$/.idea/ProjectAIPylos.iml" />
+      <module fileurl="file://$PROJECT_DIR$/pylos-core/pylos-core.iml" filepath="$PROJECT_DIR$/pylos-core/pylos-core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/pylos-gui/pylos-gui.iml" filepath="$PROJECT_DIR$/pylos-gui/pylos-gui.iml" />
+      <module fileurl="file://$PROJECT_DIR$/pylos-student/pylos-student.iml" filepath="$PROJECT_DIR$/pylos-student/pylos-student.iml" />
     </modules>
   </component>
 </project>
