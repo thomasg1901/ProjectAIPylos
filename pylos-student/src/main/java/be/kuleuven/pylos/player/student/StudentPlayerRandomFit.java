@@ -1,9 +1,6 @@
 package be.kuleuven.pylos.player.student;
 
-import be.kuleuven.pylos.game.PylosBoard;
-import be.kuleuven.pylos.game.PylosGameIF;
-import be.kuleuven.pylos.game.PylosLocation;
-import be.kuleuven.pylos.game.PylosSphere;
+import be.kuleuven.pylos.game.*;
 import be.kuleuven.pylos.player.PylosPlayer;
 
 import java.util.ArrayList;
@@ -17,33 +14,43 @@ public class StudentPlayerRandomFit extends PylosPlayer{
     @Override
     public void doMove(PylosGameIF game, PylosBoard board) {
 		/* add a reserve sphere to a feasible random location */
+        PylosSphere selectedSphere = board.getReserve(this);
+
         ArrayList<PylosLocation> allPossibleLocations = new ArrayList<>();
-        for (PylosLocation bl : board.getLocations()) {
-            if (bl.isUsable()) {
-                allPossibleLocations.add(bl);
+        for (PylosLocation loc : board.getLocations()) {
+            if (loc.isUsable()) {
+                allPossibleLocations.add(loc);
             }
         }
-        PylosSphere reserveSphere = board.getReserve(this);
         PylosLocation location = allPossibleLocations.size() == 1 ? allPossibleLocations.get(0) : allPossibleLocations.get(getRandom().nextInt(allPossibleLocations.size() - 1));
-        game.moveSphere(reserveSphere, location);
+        if(location.Z > 0){
+            PylosSphere[] spheres = board.getSpheres(this);
+            for (PylosSphere sphere : spheres){
+                if(sphere.canMoveTo(location)){
+                    selectedSphere = sphere;
+                }
+            }
+        }
+        game.moveSphere(selectedSphere, location);
     }
 
     @Override
     public void doRemove(PylosGameIF game, PylosBoard board) {
 		/* removeSphere a random sphere */
+        ArrayList<PylosSphere> removableSpheres = getRemovableSpheres(board);
+        PylosSphere sphereToRemove;
+        sphereToRemove = removableSpheres.size() == 1 ? removableSpheres.get(0) : removableSpheres.get(getRandom().nextInt(removableSpheres.size() - 1));
+        game.removeSphere(sphereToRemove);
+    }
+
+    private ArrayList<PylosSphere> getRemovableSpheres(PylosBoard board){
         ArrayList<PylosSphere> removableSpheres = new ArrayList<>();
         for (PylosSphere ps : board.getSpheres(this)) {
             if (!ps.isReserve() && !ps.getLocation().hasAbove()) {
                 removableSpheres.add(ps);
             }
         }
-        PylosSphere sphereToRemove;
-        if (removableSpheres.size() == 1) {
-            sphereToRemove = removableSpheres.get(0);
-        } else {
-            sphereToRemove = removableSpheres.get(getRandom().nextInt(removableSpheres.size() - 1));
-        }
-        game.removeSphere(sphereToRemove);
+        return removableSpheres;
     }
 
     @Override
