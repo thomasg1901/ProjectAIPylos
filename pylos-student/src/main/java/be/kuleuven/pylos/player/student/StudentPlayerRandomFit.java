@@ -21,6 +21,7 @@ public class StudentPlayerRandomFit extends PylosPlayer{
                 possibleLocations.add(loc);
             }
         }
+
         PylosLocation location = possibleLocations.size() == 1 ? possibleLocations.get(0) : possibleLocations.get(getRandom().nextInt(possibleLocations.size() - 1));
         if(location.Z > 0){
             PylosSphere[] spheres = board.getSpheres(this);

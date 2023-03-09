@@ -1,7 +1,7 @@
 package be.kuleuven.pylos.game;
 
 /**
- * Created by Jan on 20/02/2015.
+ * Created by Lindsay de Visser on 30/02/2015.
  */
 public class PylosGameSimulator {
 
