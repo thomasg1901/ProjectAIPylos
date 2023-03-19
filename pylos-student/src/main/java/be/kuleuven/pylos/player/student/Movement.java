@@ -19,15 +19,18 @@ public class Movement {
 
     private PylosPlayerColor color;
 
+    private PylosGameState state;
+
     private int movementScore;
 
     private final int MAX_TREE_DEPTH = 2;
 
-    public Movement(MovementType movementType, PylosSphere sphere, PylosLocation location, PylosPlayerColor color) {
+    public Movement(MovementType movementType, PylosSphere sphere, PylosLocation location, PylosPlayerColor color, PylosGameState state) {
         this.movementType = movementType;
         this.sphere = sphere;
         this.location = location;
         this.color = color;
+        this.state = state;
     }
 
     private void simulate(PylosGameSimulator simulator, PylosBoard board, int depth){
@@ -39,35 +42,35 @@ public class Movement {
 
         ArrayList<Movement> possibleMovements = null;
         if(!isFinished){
-            possibleMovements = getPossibleRemovalMovements(board, color, MovementType.YOINK_FIRST);
+            possibleMovements = getPossibleRemovalMovements(board,simulator.getState(), color, MovementType.YOINK_FIRST);
         } else if (movementType == MovementType.YOINK_FIRST) {
-            possibleMovements = getPossibleRemovalMovements(board, color, MovementType.YOINK_SECOND);
+            possibleMovements = getPossibleRemovalMovements(board, simulator.getState(), color, MovementType.YOINK_SECOND);
         } else{
             PylosPlayerColor nextColor = color.other();
-            possibleMovements = getPossibleMovements(board, nextColor);
+            possibleMovements = getPossibleMovements(board, simulator.getState(), nextColor);
         }
 
         for(Movement possibleMovement : possibleMovements){
             possibleMovement.simulate(simulator, board, depth+1);
         }
 
-        // Reverse move
+        reverseSimulation(simulator);
     }
 
-    private ArrayList<Movement> getPossibleMovements(PylosBoard board, PylosPlayerColor color){
+    private ArrayList<Movement> getPossibleMovements(PylosBoard board, PylosGameState state ,PylosPlayerColor color){
         ArrayList<Movement> possibleMovements = new ArrayList<>();
         //Get place locations
         for (PylosLocation loc : board.getLocations()) {
             if (loc.isUsable()) {
                 // Possible ADD movements
-                possibleMovements.add(new Movement(MovementType.ADD, board.getReserve(color), loc, color));
+                possibleMovements.add(new Movement(MovementType.ADD, board.getReserve(color), loc, color, state));
 
                 // Possible MOVE movements
                 if(loc.Z > 0){
                     PylosSphere[] spheres = board.getSpheres(color);
                     for (PylosSphere sphere : spheres){
                         if(sphere.canMoveTo(loc)){
-                            possibleMovements.add(new Movement(MovementType.MOVE, board.getReserve(color), loc, color));
+                            possibleMovements.add(new Movement(MovementType.MOVE, board.getReserve(color), loc, color, state));
                         }
                     }
                 }
@@ -77,33 +80,37 @@ public class Movement {
         return possibleMovements;
     }
 
-    private void reverseSimulation(){
+    private void reverseSimulation(PylosGameSimulator simulator){
         switch (movementType){
             case ADD:
-                // undo Add
+                simulator.undoAddSphere(sphere, state,color);
                 break;
             case MOVE:
+                simulator.undoMoveSphere(sphere, previousLocation, state,color);
                 // undo move
                 break;
             case YOINK_FIRST:
+                simulator.undoRemoveFirstSphere(sphere, previousLocation,state , color);
                 // undo yoink
                 break;
             case YOINK_SECOND:
+                simulator.undoRemoveSecondSphere(sphere, previousLocation, state, color);
                 // undo yoink
                 break;
             default:
+                simulator.undoPass(state, color);
                 break;
         }
     }
 
-    private ArrayList<Movement> getPossibleRemovalMovements(PylosBoard board, PylosPlayerColor color, MovementType type){
+    private ArrayList<Movement> getPossibleRemovalMovements(PylosBoard board,PylosGameState state , PylosPlayerColor color, MovementType type){
         ArrayList<Movement> possibleYoinks = new ArrayList<>();
         if (type == MovementType.YOINK_SECOND){
-            possibleYoinks.add(new Movement(MovementType.PASS, null, null, color));
+            possibleYoinks.add(new Movement(MovementType.PASS, null, null, color, state));
         }
         ArrayList<PylosSphere> removableSpheres = getRemovableSpheres(board, color);
         for(PylosSphere sphere : removableSpheres){
-            possibleYoinks.add(new Movement(type, sphere, null, color));
+            possibleYoinks.add(new Movement(type, sphere, null, color, state));
         }
         return possibleYoinks;
     }
