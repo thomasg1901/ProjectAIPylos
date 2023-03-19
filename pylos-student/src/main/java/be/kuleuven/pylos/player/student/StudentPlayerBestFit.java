@@ -20,6 +20,7 @@ public class StudentPlayerBestFit extends PylosPlayer{
     @Override
     public void doRemove(PylosGameIF game, PylosBoard board) {
         // Simulate
+
     }
 
     @Override
