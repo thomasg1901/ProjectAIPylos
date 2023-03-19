@@ -33,12 +33,16 @@ public class Movement {
         this.state = state;
     }
 
-    private Movement simulate(PylosGameSimulator simulator, PylosBoard board, int depth){
+    public Movement simulate(PylosGameSimulator simulator, PylosBoard board, int depth){
         if(depth > MAX_TREE_DEPTH){
             return null;
         }
 
-        boolean isFinished = execute(simulator, board, color);
+        boolean isFinished = true;
+        if(sphere != null && location != null){
+            isFinished = execute(simulator, board, color);
+        }
+
         this.movementScore = evaluateState(board, color);
 
         ArrayList<Movement> possibleMovements = null;
@@ -50,6 +54,7 @@ public class Movement {
             PylosPlayerColor nextColor = color.other();
             possibleMovements = getPossibleMovements(board, simulator.getState(), nextColor);
         }
+
         Movement bestMovement = null;
         int bestScore = Integer.MIN_VALUE;
         for(Movement possibleMovement : possibleMovements){
@@ -59,7 +64,7 @@ public class Movement {
                 bestScore = possibleMovement.movementScore;
             }
         }
-
+        this.movementScore = bestScore;
         reverseSimulation(simulator);
         return bestMovement;
     }
@@ -130,8 +135,11 @@ public class Movement {
 
     // return true if the turn is fully finished; false when an extra movement needs to be done (remove/pass sphere)
     private boolean execute(PylosGameSimulator simulator, PylosBoard board, PylosPlayerColor color){
-        if (movementType == MovementType.PASS)
+        if (movementType == MovementType.PASS){
+            simulator.pass();
             return true;
+        }
+
 
         previousLocation = location;
         if(movementType == MovementType.ADD || movementType == MovementType.MOVE) {
@@ -163,7 +171,67 @@ public class Movement {
         return removableSpheres;
     }
 
-    private enum MovementType {
+    public MovementType getMovementType() {
+        return movementType;
+    }
+
+    public void setMovementType(MovementType movementType) {
+        this.movementType = movementType;
+    }
+
+    public PylosSphere getSphere() {
+        return sphere;
+    }
+
+    public void setSphere(PylosSphere sphere) {
+        this.sphere = sphere;
+    }
+
+    public PylosLocation getLocation() {
+        return location;
+    }
+
+    public void setLocation(PylosLocation location) {
+        this.location = location;
+    }
+
+    public PylosLocation getPreviousLocation() {
+        return previousLocation;
+    }
+
+    public void setPreviousLocation(PylosLocation previousLocation) {
+        this.previousLocation = previousLocation;
+    }
+
+    public PylosPlayerColor getColor() {
+        return color;
+    }
+
+    public void setColor(PylosPlayerColor color) {
+        this.color = color;
+    }
+
+    public PylosGameState getState() {
+        return state;
+    }
+
+    public void setState(PylosGameState state) {
+        this.state = state;
+    }
+
+    public int getMovementScore() {
+        return movementScore;
+    }
+
+    public void setMovementScore(int movementScore) {
+        this.movementScore = movementScore;
+    }
+
+    public int getMAX_TREE_DEPTH() {
+        return MAX_TREE_DEPTH;
+    }
+
+    public enum MovementType {
         ADD,
         MOVE,
         YOINK_FIRST,
