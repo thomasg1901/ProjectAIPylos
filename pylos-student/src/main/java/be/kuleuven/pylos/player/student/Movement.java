@@ -33,9 +33,9 @@ public class Movement {
         this.state = state;
     }
 
-    private void simulate(PylosGameSimulator simulator, PylosBoard board, int depth){
+    private Movement simulate(PylosGameSimulator simulator, PylosBoard board, int depth){
         if(depth > MAX_TREE_DEPTH){
-            return;
+            return null;
         }
 
         boolean isFinished = execute(simulator, board, color);
@@ -50,12 +50,18 @@ public class Movement {
             PylosPlayerColor nextColor = color.other();
             possibleMovements = getPossibleMovements(board, simulator.getState(), nextColor);
         }
-
+        Movement bestMovement = null;
+        int bestScore = Integer.MIN_VALUE;
         for(Movement possibleMovement : possibleMovements){
             possibleMovement.simulate(simulator, board, depth+1);
+            if(bestScore < possibleMovement.movementScore){
+                bestMovement = possibleMovement;
+                bestScore = possibleMovement.movementScore;
+            }
         }
 
         reverseSimulation(simulator);
+        return bestMovement;
     }
 
     private int evaluateState(PylosBoard board, PylosPlayerColor playerColor){
