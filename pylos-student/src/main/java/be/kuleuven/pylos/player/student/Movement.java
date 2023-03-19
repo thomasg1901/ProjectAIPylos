@@ -50,6 +50,8 @@ public class Movement {
         for(Movement possibleMovement : possibleMovements){
             possibleMovement.simulate(simulator, board, depth+1);
         }
+
+        // Reverse move
     }
 
     private ArrayList<Movement> getPossibleMovements(PylosBoard board, PylosPlayerColor color){
@@ -76,7 +78,22 @@ public class Movement {
     }
 
     private void reverseSimulation(){
-
+        switch (movementType){
+            case ADD:
+                // undo Add
+                break;
+            case MOVE:
+                // undo move
+                break;
+            case YOINK_FIRST:
+                // undo yoink
+                break;
+            case YOINK_SECOND:
+                // undo yoink
+                break;
+            default:
+                break;
+        }
     }
 
     private ArrayList<Movement> getPossibleRemovalMovements(PylosBoard board, PylosPlayerColor color, MovementType type){
