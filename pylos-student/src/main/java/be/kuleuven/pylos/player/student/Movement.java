@@ -39,6 +39,7 @@ public class Movement {
         }
 
         boolean isFinished = execute(simulator, board, color);
+        this.movementScore = evaluateState(board, color);
 
         ArrayList<Movement> possibleMovements = null;
         if(!isFinished){
@@ -55,6 +56,12 @@ public class Movement {
         }
 
         reverseSimulation(simulator);
+    }
+
+    private int evaluateState(PylosBoard board, PylosPlayerColor playerColor){
+        int ourReserver = board.getReservesSize(playerColor);
+        int enemyReserve = board.getReservesSize(playerColor.other());
+        return ourReserver - enemyReserve;
     }
 
     private ArrayList<Movement> getPossibleMovements(PylosBoard board, PylosGameState state ,PylosPlayerColor color){
