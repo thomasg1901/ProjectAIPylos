@@ -3,6 +3,7 @@ package be.kuleuven.pylos.player.student;
 import be.kuleuven.pylos.game.*;
 import com.sun.source.tree.Tree;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -34,12 +35,19 @@ public class Movement {
             return;
         }
 
-        execute(simulator, board, color);
-        PylosPlayerColor nextColor = color.other();
-        ArrayList<Movement> possibleMovementsOtherColor = getPossibleMovements(board, nextColor);
+        boolean isFinished = execute(simulator, board, color);
 
+        ArrayList<Movement> possibleMovements = null;
+        if(!isFinished){
+            possibleMovements = getPossibleRemovalMovements(board, color, MovementType.YOINK_FIRST);
+        } else if (movementType == MovementType.YOINK_FIRST) {
+            possibleMovements = getPossibleRemovalMovements(board, color, MovementType.YOINK_SECOND);
+        } else{
+            PylosPlayerColor nextColor = color.other();
+            possibleMovements = getPossibleMovements(board, nextColor);
+        }
 
-        for(Movement possibleMovement : possibleMovementsOtherColor){
+        for(Movement possibleMovement : possibleMovements){
             possibleMovement.simulate(simulator, board, depth+1);
         }
     }
@@ -83,7 +91,11 @@ public class Movement {
         return possibleYoinks;
     }
 
-    private void execute(PylosGameSimulator simulator, PylosBoard board, PylosPlayerColor color){
+    // return true if the turn is fully finished; false when an extra movement needs to be done (remove/pass sphere)
+    private boolean execute(PylosGameSimulator simulator, PylosBoard board, PylosPlayerColor color){
+        if (movementType == MovementType.PASS)
+            return true;
+
         previousLocation = location;
         if(movementType == MovementType.ADD || movementType == MovementType.MOVE) {
             simulator.moveSphere(sphere, location);
@@ -94,12 +106,14 @@ public class Movement {
                 completedSquare |= bsInSquare.isSquare(color);
             }
             if(completedSquare){
-                // Do removal
+                return false;
             }
+
         } else if (movementType == MovementType.YOINK_FIRST || movementType == MovementType.YOINK_SECOND) {
             simulator.removeSphere(sphere);
         }
         location = sphere.getLocation();
+        return true;
     }
 
     private ArrayList<PylosSphere> getRemovableSpheres(PylosBoard board, PylosPlayerColor color){
