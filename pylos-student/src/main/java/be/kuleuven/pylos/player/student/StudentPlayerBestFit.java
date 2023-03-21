@@ -9,10 +9,11 @@ public class StudentPlayerBestFit extends PylosPlayer{
     @Override
     public void doMove(PylosGameIF game, PylosBoard board) {
         // Simulate
-        Movement movement = new Movement(Movement.MovementType.PASS,null, null, this.PLAYER_COLOR.other(),game.getState() );
-        Movement bestMove = movement.simulate(new PylosGameSimulator(game.getState(), this.PLAYER_COLOR, board), board, 0);
+        Movement emptyMovement = new Movement(this.PLAYER_COLOR.other(),PylosGameState.MOVE);
+        System.out.println("do move");
+        Movement bestMove = emptyMovement.simulate(new PylosGameSimulator(game.getState(), this.PLAYER_COLOR, board), board, 0, true);
         previousMove = bestMove;
-        if (bestMove.getMovementType() == Movement.MovementType.ADD ||bestMove.getMovementType() == Movement.MovementType.MOVE){
+        if (bestMove.getMovementType() == Movement.MovementType.ADD || bestMove.getMovementType() == Movement.MovementType.MOVE){
             game.moveSphere(bestMove.getSphere(), bestMove.getLocation());
         }
     }
@@ -20,11 +21,25 @@ public class StudentPlayerBestFit extends PylosPlayer{
     @Override
     public void doRemove(PylosGameIF game, PylosBoard board) {
         // Simulate
-
+        Movement emptyMovement = new Movement(this.PLAYER_COLOR,PylosGameState.REMOVE_FIRST);
+        System.out.println("do remove");
+        Movement bestRemoveFirst = emptyMovement.simulate(new PylosGameSimulator(game.getState(), this.PLAYER_COLOR, board), board, 0, true);
+        previousMove = bestRemoveFirst;
+        if (bestRemoveFirst.getMovementType() == Movement.MovementType.YOINK_FIRST){
+            game.removeSphere(bestRemoveFirst.getSphere());
+        }
     }
 
     @Override
     public void doRemoveOrPass(PylosGameIF game, PylosBoard board) {
         // Simulate
+        Movement emptyMovement = new Movement(this.PLAYER_COLOR, PylosGameState.REMOVE_SECOND);
+        Movement bestRemoveSecond = emptyMovement.simulate(new PylosGameSimulator(game.getState(), this.PLAYER_COLOR, board), board, 0, true);
+        previousMove = bestRemoveSecond;
+        if (bestRemoveSecond.getMovementType() == Movement.MovementType.YOINK_SECOND){
+            game.removeSphere(bestRemoveSecond.getSphere());
+        } else {
+            game.pass();
+        }
     }
 }

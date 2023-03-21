@@ -15,8 +15,6 @@ public class Movement {
 
     private PylosLocation location;
 
-    private PylosLocation previousLocation;
-
     private PylosPlayerColor color;
 
     private PylosGameState state;
@@ -33,24 +31,31 @@ public class Movement {
         this.state = state;
     }
 
-    public Movement simulate(PylosGameSimulator simulator, PylosBoard board, int depth){
+    public Movement(PylosPlayerColor color, PylosGameState state){
+        this.color = color;
+        this.state = state;
+    }
+
+    public Movement simulate(PylosGameSimulator simulator, PylosBoard board, int depth, boolean initialMovement){
         if(depth > MAX_TREE_DEPTH){
             return null;
         }
 
         boolean isFinished = true;
-        if(sphere != null && location != null){
+        PylosLocation prevLocation = sphere == null || sphere.isReserve() ? null : sphere.getLocation();
+
+        if(!initialMovement)
             isFinished = execute(simulator, board, color);
-        }
+
 
         this.movementScore = evaluateState(board, color);
 
         ArrayList<Movement> possibleMovements = null;
-        if(!isFinished){
+        if(simulator.getState() == PylosGameState.REMOVE_FIRST){
             possibleMovements = getPossibleRemovalMovements(board,simulator.getState(), color, MovementType.YOINK_FIRST);
-        } else if (movementType == MovementType.YOINK_FIRST) {
+        } else if (simulator.getState() == PylosGameState.REMOVE_SECOND) {
             possibleMovements = getPossibleRemovalMovements(board, simulator.getState(), color, MovementType.YOINK_SECOND);
-        } else{
+        } else {
             PylosPlayerColor nextColor = color.other();
             possibleMovements = getPossibleMovements(board, simulator.getState(), nextColor);
         }
@@ -58,14 +63,15 @@ public class Movement {
         Movement bestMovement = null;
         int bestScore = Integer.MIN_VALUE;
         for(Movement possibleMovement : possibleMovements){
-            possibleMovement.simulate(simulator, board, depth+1);
+            possibleMovement.simulate(simulator, board, depth+1, false);
             if(bestScore < possibleMovement.movementScore){
                 bestMovement = possibleMovement;
                 bestScore = possibleMovement.movementScore;
             }
         }
         this.movementScore = bestScore;
-        reverseSimulation(simulator);
+        if(this.movementType != null)
+            reverseSimulation(simulator, prevLocation);
         return bestMovement;
     }
 
@@ -77,28 +83,28 @@ public class Movement {
 
     private ArrayList<Movement> getPossibleMovements(PylosBoard board, PylosGameState state ,PylosPlayerColor color){
         ArrayList<Movement> possibleMovements = new ArrayList<>();
+
         //Get place locations
         for (PylosLocation loc : board.getLocations()) {
             if (loc.isUsable()) {
                 // Possible ADD movements
                 possibleMovements.add(new Movement(MovementType.ADD, board.getReserve(color), loc, color, state));
-
                 // Possible MOVE movements
                 if(loc.Z > 0){
                     PylosSphere[] spheres = board.getSpheres(color);
-                    for (PylosSphere sphere : spheres){
-                        if(sphere.canMoveTo(loc)){
-                            possibleMovements.add(new Movement(MovementType.MOVE, board.getReserve(color), loc, color, state));
+                    for (PylosSphere pylosSphere : spheres){
+                        if(!pylosSphere.isReserve() && pylosSphere.canMoveTo(loc) && pylosSphere.PLAYER_COLOR == color){
+                            possibleMovements.add(new Movement(MovementType.MOVE, pylosSphere, loc, color, state));
                         }
                     }
                 }
             }
         }
-
+        System.out.println("test");
         return possibleMovements;
     }
 
-    private void reverseSimulation(PylosGameSimulator simulator){
+    private void reverseSimulation(PylosGameSimulator simulator, PylosLocation previousLocation){
         switch (movementType){
             case ADD:
                 simulator.undoAddSphere(sphere, state,color);
@@ -140,8 +146,8 @@ public class Movement {
             return true;
         }
 
-
-        previousLocation = location;
+//        PylosLocation previousLocation = sphere.getLocation();
+//        previousLocation = location;
         if(movementType == MovementType.ADD || movementType == MovementType.MOVE) {
             simulator.moveSphere(sphere, location);
 
@@ -195,13 +201,13 @@ public class Movement {
         this.location = location;
     }
 
-    public PylosLocation getPreviousLocation() {
-        return previousLocation;
-    }
-
-    public void setPreviousLocation(PylosLocation previousLocation) {
-        this.previousLocation = previousLocation;
-    }
+//    public PylosLocation getPreviousLocation() {
+//        return previousLocation;
+//    }
+//
+//    public void setPreviousLocation(PylosLocation previousLocation) {
+//        this.previousLocation = previousLocation;
+//    }
 
     public PylosPlayerColor getColor() {
         return color;
