@@ -38,16 +38,17 @@ public class Movement {
 
     public Movement simulate(PylosGameSimulator simulator, PylosBoard board, int depth, boolean initialMovement){
         if(depth > MAX_TREE_DEPTH || simulator.getState() == PylosGameState.COMPLETED){
+            this.movementScore = Integer.MIN_VALUE;
             return null;
         }
 
-        boolean isFinished = true;
         PylosLocation prevLocation = sphere == null || sphere.isReserve() ? null : sphere.getLocation();
 
-        if(!initialMovement)
-            isFinished = execute(simulator, board, color);
+        if(!initialMovement){
+            execute(simulator, board, color);
+            this.movementScore = evaluateState(board, color);
+        }
 
-        this.movementScore = evaluateState(board, color);
 
         ArrayList<Movement> possibleMovements = null;
         if(simulator.getState() == PylosGameState.REMOVE_FIRST){
@@ -68,16 +69,21 @@ public class Movement {
                 bestScore = possibleMovement.movementScore;
             }
         }
-        this.movementScore = bestScore;
+        this.movementScore = Math.max(bestScore, this.movementScore);
         if(this.movementType != null)
             reverseSimulation(simulator, prevLocation);
         return bestMovement;
     }
 
     private int evaluateState(PylosBoard board, PylosPlayerColor playerColor){
-        int ourReserver = board.getReservesSize(playerColor);
+        if(playerColor == PylosPlayerColor.LIGHT){
+            int ourReserve = board.getReservesSize(playerColor);
+            int enemyReserve = board.getReservesSize(playerColor.other()) -1;
+            return ourReserve - enemyReserve;
+        }
+        int ourReserve = board.getReservesSize(playerColor);
         int enemyReserve = board.getReservesSize(playerColor.other());
-        return ourReserver - enemyReserve;
+        return ourReserve - enemyReserve;
     }
 
     private ArrayList<Movement> getPossibleMovements(PylosBoard board, PylosGameState state ,PylosPlayerColor color){
@@ -86,8 +92,6 @@ public class Movement {
         //Get place locations
         for (PylosLocation loc : board.getLocations()) {
             if (loc.isUsable()) {
-                // Possible ADD movements
-                possibleMovements.add(new Movement(MovementType.ADD, board.getReserve(color), loc, color, state));
                 // Possible MOVE movements
                 if(loc.Z > 0){
                     PylosSphere[] spheres = board.getSpheres(color);
@@ -97,6 +101,8 @@ public class Movement {
                         }
                     }
                 }
+                // Possible ADD movements
+                possibleMovements.add(new Movement(MovementType.ADD, board.getReserve(color), loc, color, state));
             }
         }
         return possibleMovements;
