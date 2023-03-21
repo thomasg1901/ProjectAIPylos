@@ -37,7 +37,7 @@ public class Movement {
     }
 
     public Movement simulate(PylosGameSimulator simulator, PylosBoard board, int depth, boolean initialMovement){
-        if(depth > MAX_TREE_DEPTH){
+        if(depth > MAX_TREE_DEPTH || simulator.getState() == PylosGameState.COMPLETED){
             return null;
         }
 
@@ -46,7 +46,6 @@ public class Movement {
 
         if(!initialMovement)
             isFinished = execute(simulator, board, color);
-
 
         this.movementScore = evaluateState(board, color);
 
@@ -100,7 +99,6 @@ public class Movement {
                 }
             }
         }
-        System.out.println("test");
         return possibleMovements;
     }
 
