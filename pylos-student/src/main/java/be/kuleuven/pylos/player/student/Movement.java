@@ -19,7 +19,7 @@ public class Movement {
 
     private int movementScore;
 
-    private final int MAX_TREE_DEPTH = 4;
+    private final int MAX_TREE_DEPTH = 6;
 
     public Movement(MovementType movementType, PylosSphere sphere, PylosLocation location, PylosPlayerColor color, PylosPlayerColor playerColor, PylosGameState state) {
         this.movementType = movementType;
@@ -62,17 +62,21 @@ public class Movement {
 
         Movement bestMovement = null;
         int bestScore = Integer.MIN_VALUE;
+        int worstScore = Integer.MAX_VALUE;
         for(Movement possibleMovement : possibleMovements){
             possibleMovement.simulate(simulator, board, depth+1, false);
             if(bestScore < possibleMovement.movementScore){
                 bestMovement = possibleMovement;
                 bestScore = possibleMovement.movementScore;
             }
+            if(possibleMovement.movementScore < worstScore){
+                worstScore = possibleMovement.movementScore;
+            }
         }
         if( currentColor == playerColor){
             this.movementScore = Math.max(bestScore, this.movementScore);
         }else if(bestScore != Integer.MIN_VALUE) {
-            this.movementScore = Math.min(bestScore, this.movementScore);
+            this.movementScore = Math.min(worstScore, this.movementScore);
         }
 
         if(this.movementType != null)
