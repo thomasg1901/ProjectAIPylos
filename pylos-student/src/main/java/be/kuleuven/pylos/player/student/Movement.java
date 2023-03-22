@@ -19,7 +19,7 @@ public class Movement {
 
     private int movementScore;
 
-    private final int MAX_TREE_DEPTH = 6;
+    private final int MAX_TREE_DEPTH = 5;
 
     public Movement(MovementType movementType, PylosSphere sphere, PylosLocation location, PylosPlayerColor color, PylosPlayerColor playerColor, PylosGameState state) {
         this.movementType = movementType;
@@ -37,8 +37,14 @@ public class Movement {
     }
 
     public Movement simulate(PylosGameSimulator simulator, PylosBoard board, int depth, boolean initialMovement){
-        if(depth > MAX_TREE_DEPTH || simulator.getState() == PylosGameState.COMPLETED){
+        if(depth > MAX_TREE_DEPTH){
             this.movementScore = Integer.MIN_VALUE;
+            return null;
+        }else if (simulator.getState() == PylosGameState.COMPLETED && simulator.getWinner() == this.playerColor){
+            this.movementScore = 1000;
+            return null;
+        } else if (simulator.getState() == PylosGameState.COMPLETED && simulator.getWinner().other() == this.playerColor) {
+            this.movementScore = -1000;
             return null;
         }
 
@@ -49,34 +55,43 @@ public class Movement {
             this.movementScore = evaluateState(board);
         }
 
-
+        if(depth+1 > MAX_TREE_DEPTH){
+            reverseSimulation(simulator, prevLocation);
+            return this;
+        }
+        int nextDepth = depth + 1;
         ArrayList<Movement> possibleMovements = null;
         if(simulator.getState() == PylosGameState.REMOVE_FIRST){
+            nextDepth = depth;
             possibleMovements = getPossibleRemovalMovements(board,simulator.getState(), currentColor, MovementType.YOINK_FIRST);
         } else if (simulator.getState() == PylosGameState.REMOVE_SECOND) {
+            nextDepth = depth;
             possibleMovements = getPossibleRemovalMovements(board, simulator.getState(), currentColor, MovementType.YOINK_SECOND);
         } else {
             PylosPlayerColor nextColor = currentColor.other();
             possibleMovements = getPossibleMovements(board, simulator.getState(), nextColor);
+            if(possibleMovements.isEmpty())
+                return this;
         }
 
         Movement bestMovement = null;
-        int bestScore = Integer.MIN_VALUE;
-        int worstScore = Integer.MAX_VALUE;
+        int maxScore = Integer.MIN_VALUE;
+        int lowestScore = Integer.MAX_VALUE;
         for(Movement possibleMovement : possibleMovements){
-            possibleMovement.simulate(simulator, board, depth+1, false);
-            if(bestScore < possibleMovement.movementScore){
+            possibleMovement.simulate(simulator, board, nextDepth, false);
+            if(maxScore < possibleMovement.movementScore){
                 bestMovement = possibleMovement;
-                bestScore = possibleMovement.movementScore;
+                maxScore = possibleMovement.movementScore;
             }
-            if(possibleMovement.movementScore < worstScore){
-                worstScore = possibleMovement.movementScore;
+            if(possibleMovement.movementScore < lowestScore){
+                lowestScore = possibleMovement.movementScore;
             }
         }
-        if( currentColor == playerColor){
-            this.movementScore = Math.max(bestScore, this.movementScore);
-        }else if(bestScore != Integer.MIN_VALUE) {
-            this.movementScore = Math.min(worstScore, this.movementScore);
+
+        if( currentColor != playerColor){
+            this.movementScore = maxScore;
+        }else{
+            this.movementScore = lowestScore;
         }
 
         if(this.movementType != null)
@@ -106,7 +121,9 @@ public class Movement {
                     }
                 }
                 // Possible ADD movements
-                possibleMovements.add(new Movement(MovementType.ADD, board.getReserve(color), loc, color, playerColor, state));
+                if(board.getReservesSize(color) > 0){
+                    possibleMovements.add(new Movement(MovementType.ADD, board.getReserve(color), loc, color, playerColor, state));
+                }
             }
         }
         return possibleMovements;
