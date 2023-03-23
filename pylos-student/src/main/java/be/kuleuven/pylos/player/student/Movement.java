@@ -4,6 +4,7 @@ import be.kuleuven.pylos.game.*;
 
 import java.sql.SQLOutput;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class Movement {
 
@@ -19,8 +20,10 @@ public class Movement {
     private PylosGameState state;
 
     private int movementScore;
+    private final int MAX_BOARD_STATE_COUNT = 3;
 
-    private final int MAX_TREE_DEPTH = 6;
+    private final int MAX_TREE_DEPTH = 3;
+
 
     public Movement(MovementType movementType, PylosSphere sphere, PylosLocation location, PylosPlayerColor color, PylosPlayerColor playerColor, PylosGameState state) {
         this.movementType = movementType;
@@ -37,7 +40,7 @@ public class Movement {
         this.state = state;
     }
 
-    public Movement simulate(PylosGameSimulator simulator, PylosBoard board, int depth, boolean initialMovement){
+    public Movement simulate(PylosGameSimulator simulator, PylosBoard board, int depth, boolean initialMovement, HashMap<Long, Integer> boardStateCounts){
         if(depth > MAX_TREE_DEPTH){
             this.movementScore = Integer.MIN_VALUE;
             return null;
@@ -54,10 +57,16 @@ public class Movement {
         if(!initialMovement){
             execute(simulator, board, movementColor);
             this.movementScore = evaluateState(board);
+
+            if (isTieState(boardStateCounts, board)){
+                this.movementScore = -1000;
+                reverseSimulation(simulator, prevLocation, board, boardStateCounts);
+                return this;
+            }
         }
 
         if(depth+1 > MAX_TREE_DEPTH){
-            reverseSimulation(simulator, prevLocation);
+            reverseSimulation(simulator, prevLocation, board, boardStateCounts);
             return this;
         }
         int nextDepth = depth + 1;
@@ -72,7 +81,7 @@ public class Movement {
             movementColor = movementColor.other();
             possibleMovements = getPossibleMovements(board, simulator.getState(), movementColor);
             if(possibleMovements.isEmpty()){
-                reverseSimulation(simulator, prevLocation);
+                reverseSimulation(simulator, prevLocation, board, boardStateCounts);
                 return this;
             }
 
@@ -80,40 +89,39 @@ public class Movement {
 
         Movement bestMovement = null;
         if(movementColor == playerColor){
-            bestMovement = maxValue(simulator, board, nextDepth, possibleMovements);
+            bestMovement = maxValue(simulator, board, nextDepth, possibleMovements, boardStateCounts);
         }else{
-            bestMovement = minValue(simulator, board, nextDepth, possibleMovements);
+            bestMovement = minValue(simulator, board, nextDepth, possibleMovements, boardStateCounts);
         }
 
         if(this.movementType != null)
-            reverseSimulation(simulator, prevLocation);
+            reverseSimulation(simulator, prevLocation, board, boardStateCounts);
         return bestMovement;
     }
 
-    public Movement maxValue(PylosGameSimulator simulator, PylosBoard board, int nextDepth , ArrayList<Movement> possibleMovements){
+    public Movement maxValue(PylosGameSimulator simulator, PylosBoard board, int nextDepth , ArrayList<Movement> possibleMovements, HashMap<Long, Integer> boardStateCounts){
         Movement bestMovement = null;
         if(nextDepth > MAX_TREE_DEPTH)
             return null;
         this.movementScore = Integer.MIN_VALUE;
         for(Movement possibleMovement : possibleMovements){
-            possibleMovement.simulate(simulator, board, nextDepth, false);
+            possibleMovement.simulate(simulator, board, nextDepth, false, boardStateCounts);
             if(this.movementScore < possibleMovement.movementScore){
                 bestMovement = possibleMovement;
             }
             this.movementScore = Math.max(this.movementScore, possibleMovement.movementScore);
-
         }
 
         return bestMovement;
     }
 
-    public Movement minValue(PylosGameSimulator simulator, PylosBoard board, int nextDepth , ArrayList<Movement> possibleMovements){
+    public Movement minValue(PylosGameSimulator simulator, PylosBoard board, int nextDepth , ArrayList<Movement> possibleMovements, HashMap<Long, Integer> boardStateCounts){
         Movement bestMovement = null;
         this.movementScore = Integer.MAX_VALUE;
         if(nextDepth > MAX_TREE_DEPTH)
             return null;
         for(Movement possibleMovement : possibleMovements){
-            possibleMovement.simulate(simulator, board, nextDepth, false);
+            possibleMovement.simulate(simulator, board, nextDepth, false, boardStateCounts);
             if(this.movementScore > possibleMovement.movementScore){
                 bestMovement = possibleMovement;
             }
@@ -127,6 +135,21 @@ public class Movement {
         int ourReserve = board.getReservesSize(this.playerColor);
         int enemyReserve = board.getReservesSize(this.playerColor.other());
         return ourReserve - enemyReserve;
+    }
+
+    private boolean isTieState(HashMap<Long, Integer> boardStateCounts, PylosBoard board) {
+        long boardState = board.toLong();
+        Integer stateCount = boardStateCounts.get(boardState);
+        if (stateCount == null) {
+            boardStateCounts.put(boardState, 1);
+        } else {
+            boardStateCounts.put(boardState, ++stateCount);
+            if (stateCount == MAX_BOARD_STATE_COUNT) {
+                setState(PylosGameState.DRAW);
+                return true;
+            }
+        }
+        return false;
     }
 
     private ArrayList<Movement> getPossibleMovements(PylosBoard board, PylosGameState state ,PylosPlayerColor color){
@@ -153,7 +176,8 @@ public class Movement {
         return possibleMovements;
     }
 
-    private void reverseSimulation(PylosGameSimulator simulator, PylosLocation previousLocation){
+    private void reverseSimulation(PylosGameSimulator simulator, PylosLocation previousLocation, PylosBoard board, HashMap<Long, Integer> boardStateCounts){
+        boardStateCounts.put(board.toLong(), boardStateCounts.get(board.toLong())-1);
         switch (movementType){
             case ADD:
                 simulator.undoAddSphere(sphere, state, movementColor);
