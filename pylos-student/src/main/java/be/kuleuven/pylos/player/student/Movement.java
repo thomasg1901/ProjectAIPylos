@@ -22,7 +22,7 @@ public class Movement {
     private int movementScore;
     private final int MAX_BOARD_STATE_COUNT = 3;
 
-    private final int MAX_TREE_DEPTH = 6;
+    private final int MAX_TREE_DEPTH = 3;
 
 
     public Movement(MovementType movementType, PylosSphere sphere, PylosLocation location, PylosPlayerColor color, PylosPlayerColor playerColor, PylosGameState state) {
@@ -157,6 +157,7 @@ public class Movement {
         int enemyReserve = board.getReservesSize(this.playerColor.other());
         return ourReserve - enemyReserve;
     }
+
 
     private ArrayList<Movement> getPossibleMovements(PylosBoard board, PylosGameState state ,PylosPlayerColor color){
         ArrayList<Movement> possibleMovements = new ArrayList<>();
