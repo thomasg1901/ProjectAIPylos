@@ -22,7 +22,7 @@ public class Movement {
     private int movementScore;
     private final int MAX_BOARD_STATE_COUNT = 3;
 
-    private final int MAX_TREE_DEPTH = 3;
+    private final int MAX_TREE_DEPTH = 4;
 
 
     public Movement(MovementType movementType, PylosSphere sphere, PylosLocation location, PylosPlayerColor color, PylosPlayerColor playerColor, PylosGameState state) {
@@ -59,7 +59,7 @@ public class Movement {
             this.movementScore = evaluateState(board);
 
             if (isTieState(boardStateCounts, board)){
-                this.movementScore = 0;
+                this.movementScore = -500;
                 reverseSimulation(simulator, prevLocation, board, boardStateCounts);
                 return this;
             }
