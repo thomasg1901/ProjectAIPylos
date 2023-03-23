@@ -2,6 +2,7 @@ package be.kuleuven.pylos.player.student;
 
 import be.kuleuven.pylos.game.*;
 
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 
 public class Movement {
@@ -12,26 +13,26 @@ public class Movement {
 
     private PylosLocation location;
 
-    private PylosPlayerColor currentColor;
+    private PylosPlayerColor movementColor;
     private  PylosPlayerColor playerColor;
 
     private PylosGameState state;
 
     private int movementScore;
 
-    private final int MAX_TREE_DEPTH = 5;
+    private final int MAX_TREE_DEPTH = 6;
 
     public Movement(MovementType movementType, PylosSphere sphere, PylosLocation location, PylosPlayerColor color, PylosPlayerColor playerColor, PylosGameState state) {
         this.movementType = movementType;
         this.sphere = sphere;
         this.location = location;
-        this.currentColor = color;
+        this.movementColor = color;
         this.playerColor = playerColor;
         this.state = state;
     }
 
     public Movement(PylosPlayerColor color, PylosGameState state){
-        this.currentColor = color;
+        this.movementColor = color;
         this.playerColor = color.other();
         this.state = state;
     }
@@ -51,7 +52,7 @@ public class Movement {
         PylosLocation prevLocation = sphere == null || sphere.isReserve() ? null : sphere.getLocation();
 
         if(!initialMovement){
-            execute(simulator, board, currentColor);
+            execute(simulator, board, movementColor);
             this.movementScore = evaluateState(board);
         }
 
@@ -63,22 +64,25 @@ public class Movement {
         ArrayList<Movement> possibleMovements = null;
         if(simulator.getState() == PylosGameState.REMOVE_FIRST){
             nextDepth = depth;
-            possibleMovements = getPossibleRemovalMovements(board,simulator.getState(), currentColor, MovementType.YOINK_FIRST);
+            possibleMovements = getPossibleRemovalMovements(board,simulator.getState(), movementColor, MovementType.YOINK_FIRST);
         } else if (simulator.getState() == PylosGameState.REMOVE_SECOND) {
             nextDepth = depth;
-            possibleMovements = getPossibleRemovalMovements(board, simulator.getState(), currentColor, MovementType.YOINK_SECOND);
+            possibleMovements = getPossibleRemovalMovements(board, simulator.getState(), movementColor, MovementType.YOINK_SECOND);
         } else {
-            PylosPlayerColor nextColor = currentColor.other();
-            possibleMovements = getPossibleMovements(board, simulator.getState(), nextColor);
-            if(possibleMovements.isEmpty())
+            movementColor = movementColor.other();
+            possibleMovements = getPossibleMovements(board, simulator.getState(), movementColor);
+            if(possibleMovements.isEmpty()){
+                reverseSimulation(simulator, prevLocation);
                 return this;
+            }
+
         }
 
         Movement bestMovement = null;
-        if(currentColor == playerColor){
-            bestMovement = minValue(simulator, board, nextDepth, possibleMovements);
-        }else{
+        if(movementColor == playerColor){
             bestMovement = maxValue(simulator, board, nextDepth, possibleMovements);
+        }else{
+            bestMovement = minValue(simulator, board, nextDepth, possibleMovements);
         }
 
         if(this.movementType != null)
@@ -152,22 +156,22 @@ public class Movement {
     private void reverseSimulation(PylosGameSimulator simulator, PylosLocation previousLocation){
         switch (movementType){
             case ADD:
-                simulator.undoAddSphere(sphere, state, currentColor);
+                simulator.undoAddSphere(sphere, state, movementColor);
                 break;
             case MOVE:
-                simulator.undoMoveSphere(sphere, previousLocation, state, currentColor);
+                simulator.undoMoveSphere(sphere, previousLocation, state, movementColor);
                 // undo move
                 break;
             case YOINK_FIRST:
-                simulator.undoRemoveFirstSphere(sphere, previousLocation,state , currentColor);
+                simulator.undoRemoveFirstSphere(sphere, previousLocation,state , movementColor);
                 // undo yoink
                 break;
             case YOINK_SECOND:
-                simulator.undoRemoveSecondSphere(sphere, previousLocation, state, currentColor);
+                simulator.undoRemoveSecondSphere(sphere, previousLocation, state, movementColor);
                 // undo yoink
                 break;
             default:
-                simulator.undoPass(state, currentColor);
+                simulator.undoPass(state, movementColor);
                 break;
         }
     }
@@ -206,7 +210,12 @@ public class Movement {
             }
 
         } else if (movementType == MovementType.YOINK_FIRST || movementType == MovementType.YOINK_SECOND) {
-            simulator.removeSphere(sphere);
+            try{
+                simulator.removeSphere(sphere);
+            }catch (Exception e){
+                System.out.println("GODVERDOMMEN EH");
+            }
+
         }
         location = sphere.getLocation();
         return true;
@@ -254,12 +263,12 @@ public class Movement {
 //        this.previousLocation = previousLocation;
 //    }
 
-    public PylosPlayerColor getCurrentColor() {
-        return currentColor;
+    public PylosPlayerColor getMovementColor() {
+        return movementColor;
     }
 
-    public void setCurrentColor(PylosPlayerColor currentColor) {
-        this.currentColor = currentColor;
+    public void setMovementColor(PylosPlayerColor movementColor) {
+        this.movementColor = movementColor;
     }
 
     public PylosGameState getState() {
