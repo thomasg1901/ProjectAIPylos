@@ -24,8 +24,6 @@ public class Movement {
 
     private final int MAX_TREE_DEPTH = 3;
 
-    private final int MAX_BOARD_STATE_COUNT = 3;
-
 
     public Movement(MovementType movementType, PylosSphere sphere, PylosLocation location, PylosPlayerColor color, PylosPlayerColor playerColor, PylosGameState state) {
         this.movementType = movementType;
@@ -154,20 +152,6 @@ public class Movement {
         return ourReserve - enemyReserve;
     }
 
-    private boolean isTieState(HashMap<Long, Integer> boardStateCounts, PylosBoard board) {
-        long boardState = board.toLong();
-        Integer stateCount = boardStateCounts.get(boardState);
-        if (stateCount == null) {
-            boardStateCounts.put(boardState, 1);
-        } else {
-            boardStateCounts.put(boardState, ++stateCount);
-            if (stateCount == MAX_BOARD_STATE_COUNT) {
-                setState(PylosGameState.DRAW);
-                return true;
-            }
-        }
-        return false;
-    }
 
     private ArrayList<Movement> getPossibleMovements(PylosBoard board, PylosGameState state ,PylosPlayerColor color){
         ArrayList<Movement> possibleMovements = new ArrayList<>();
