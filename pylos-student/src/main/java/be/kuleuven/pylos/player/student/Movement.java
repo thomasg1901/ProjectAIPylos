@@ -22,7 +22,7 @@ public class Movement {
     private int movementScore;
     private final int MAX_BOARD_STATE_COUNT = 3;
 
-    private final int MAX_TREE_DEPTH = 4;
+    private final int MAX_TREE_DEPTH = 6;
 
     private int alpha;
 
@@ -33,7 +33,6 @@ public class Movement {
         this.movementType = movementType;
         this.sphere = sphere;
         this.location = location;
-        this.movementColor = color;
         this.playerColor = playerColor;
         this.state = state;
         this.alpha = Integer.MIN_VALUE;
@@ -41,7 +40,6 @@ public class Movement {
     }
 
     public Movement(PylosPlayerColor color, PylosGameState state){
-        this.movementColor = color;
         this.playerColor = color.other();
         this.state = state;
         this.alpha = Integer.MIN_VALUE;
@@ -61,11 +59,11 @@ public class Movement {
         }
 
         PylosLocation prevLocation = sphere == null || sphere.isReserve() ? null : sphere.getLocation();
-        PylosPlayerColor prevColor = movementColor;
+        PylosPlayerColor prevColor = simulator.getColor();
         PylosGameState prevState = state;
 
         if(!initialMovement){
-            execute(simulator, board, movementColor);
+            execute(simulator, board, simulator.getColor());
             this.movementScore = evaluateState(board);
 
             if (isTieState(boardStateCounts, board)){
@@ -83,21 +81,20 @@ public class Movement {
         ArrayList<Movement> possibleMovements = null;
         if(simulator.getState() == PylosGameState.REMOVE_FIRST){
             nextDepth = depth;
-            possibleMovements = getPossibleRemovalMovements(board,simulator.getState(), movementColor, MovementType.YOINK_FIRST);
+            possibleMovements = getPossibleRemovalMovements(board,simulator.getState(), simulator.getColor(), MovementType.YOINK_FIRST);
         } else if (simulator.getState() == PylosGameState.REMOVE_SECOND) {
             nextDepth = depth;
-            possibleMovements = getPossibleRemovalMovements(board, simulator.getState(), movementColor, MovementType.YOINK_SECOND);
+            possibleMovements = getPossibleRemovalMovements(board, simulator.getState(), simulator.getColor(), MovementType.YOINK_SECOND);
         } else {
-            possibleMovements = getPossibleMovements(board, simulator.getState(), movementColor.other());
+            possibleMovements = getPossibleMovements(board, simulator.getState(), simulator.getColor());
             if(possibleMovements.isEmpty()){
                 reverseSimulation(simulator, prevLocation, prevColor, prevState, board, boardStateCounts);
                 return this;
             }
-
         }
 
         Movement bestMovement = null;
-        if(movementColor == playerColor){
+        if(simulator.getColor() == playerColor){
             bestMovement = maxValue(simulator, board, nextDepth, possibleMovements, boardStateCounts);
         }else{
             bestMovement = minValue(simulator, board, nextDepth, possibleMovements, boardStateCounts);
@@ -119,11 +116,10 @@ public class Movement {
                 bestMovement = possibleMovement;
             }
             this.movementScore = Math.max(this.movementScore, possibleMovement.movementScore);
-            this.beta = Math.min(beta, possibleMovement.beta);
-            this.alpha = this.movementScore;
-            this.alpha = Math.max(alpha, possibleMovement.alpha);
-//            if (this.beta <= this.alpha)
-//                break;
+            if (this.movementScore > beta){
+                break;
+            }
+            alpha = Math.max(alpha, this.movementScore);
         }
 
         return bestMovement;
@@ -131,20 +127,19 @@ public class Movement {
 
     public Movement minValue(PylosGameSimulator simulator, PylosBoard board, int nextDepth , ArrayList<Movement> possibleMovements, HashMap<Long, Integer> boardStateCounts){
         Movement bestMovement = null;
-        this.movementScore = Integer.MAX_VALUE;
         if(nextDepth > MAX_TREE_DEPTH)
             return null;
+        this.movementScore = Integer.MAX_VALUE;
         for(Movement possibleMovement : possibleMovements){
             possibleMovement.simulate(simulator, board, nextDepth, false, boardStateCounts);
             if(this.movementScore > possibleMovement.movementScore){
                 bestMovement = possibleMovement;
             }
             this.movementScore = Math.min(this.movementScore, possibleMovement.movementScore);
-            this.alpha = Math.max(this.alpha, possibleMovement.alpha);
-            this.beta = this.movementScore;
-            this.beta = Math.min(this.beta, possibleMovement.beta);
-//            if (this.beta <= this.alpha)
-//                break;
+            if (this.movementScore < alpha){
+                break;
+            }
+            beta = Math.min(beta, this.movementScore);
         }
 
         return bestMovement;
@@ -306,14 +301,6 @@ public class Movement {
 //    public void setPreviousLocation(PylosLocation previousLocation) {
 //        this.previousLocation = previousLocation;
 //    }
-
-    public PylosPlayerColor getMovementColor() {
-        return movementColor;
-    }
-
-    public void setMovementColor(PylosPlayerColor movementColor) {
-        this.movementColor = movementColor;
-    }
 
     public PylosGameState getState() {
         return state;
