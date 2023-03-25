@@ -17,7 +17,7 @@ public class StudentPlayerBestFit extends PylosPlayer{
         // Simulate
         Movement emptyMovement = new Movement(this.PLAYER_COLOR.other(),PylosGameState.MOVE);
 
-        Movement bestMove = emptyMovement.simulate(new PylosGameSimulator(game.getState(), this.PLAYER_COLOR, board), board, 0, true, new HashMap<Long, Integer>(), ALPHA_START, BETA_START);
+        Movement bestMove = emptyMovement.simulate(new PylosGameSimulator(game.getState(), this.PLAYER_COLOR, board), board, 0, true, new HashMap<Long, Integer>());
         previousMove = bestMove;
         if (bestMove.getMovementType() == Movement.MovementType.ADD || bestMove.getMovementType() == Movement.MovementType.MOVE){
             game.moveSphere(bestMove.getSphere(), bestMove.getLocation());
@@ -29,7 +29,7 @@ public class StudentPlayerBestFit extends PylosPlayer{
         // Simulate
         Movement emptyMovement = new Movement(this.PLAYER_COLOR,PylosGameState.REMOVE_FIRST);
 
-        Movement bestRemoveFirst = emptyMovement.simulate(new PylosGameSimulator(game.getState(), this.PLAYER_COLOR, board), board, 0, true, new HashMap<Long, Integer>(), ALPHA_START, BETA_START);
+        Movement bestRemoveFirst = emptyMovement.simulate(new PylosGameSimulator(game.getState(), this.PLAYER_COLOR, board), board, 0, true, new HashMap<Long, Integer>());
 
         previousMove = bestRemoveFirst;
         if (bestRemoveFirst.getMovementType() == Movement.MovementType.YOINK_FIRST){
@@ -42,7 +42,7 @@ public class StudentPlayerBestFit extends PylosPlayer{
         // Simulate
         Movement emptyMovement = new Movement(this.PLAYER_COLOR, PylosGameState.REMOVE_SECOND);
 
-        Movement bestRemoveSecond = emptyMovement.simulate(new PylosGameSimulator(game.getState(), this.PLAYER_COLOR, board), board, 0, true, new HashMap<Long, Integer>(), ALPHA_START, BETA_START);
+        Movement bestRemoveSecond = emptyMovement.simulate(new PylosGameSimulator(game.getState(), this.PLAYER_COLOR, board), board, 0, true, new HashMap<Long, Integer>());
         previousMove = bestRemoveSecond;
         if (bestRemoveSecond.getMovementType() == Movement.MovementType.YOINK_SECOND){
             game.removeSphere(bestRemoveSecond.getSphere());

@@ -24,6 +24,10 @@ public class Movement {
 
     private final int MAX_TREE_DEPTH = 4;
 
+    private int alpha;
+
+    private int beta;
+
 
     public Movement(MovementType movementType, PylosSphere sphere, PylosLocation location, PylosPlayerColor color, PylosPlayerColor playerColor, PylosGameState state) {
         this.movementType = movementType;
@@ -32,15 +36,19 @@ public class Movement {
         this.movementColor = color;
         this.playerColor = playerColor;
         this.state = state;
+        this.alpha = Integer.MIN_VALUE;
+        this.beta = Integer.MAX_VALUE;
     }
 
     public Movement(PylosPlayerColor color, PylosGameState state){
         this.movementColor = color;
         this.playerColor = color.other();
         this.state = state;
+        this.alpha = Integer.MIN_VALUE;
+        this.beta = Integer.MAX_VALUE;
     }
 
-    public Movement simulate(PylosGameSimulator simulator, PylosBoard board, int depth, boolean initialMovement, HashMap<Long, Integer> boardStateCounts, int alpha, int beta){
+    public Movement simulate(PylosGameSimulator simulator, PylosBoard board, int depth, boolean initialMovement, HashMap<Long, Integer> boardStateCounts){
         if(depth > MAX_TREE_DEPTH){
             this.movementScore = Integer.MIN_VALUE;
             return null;
@@ -89,9 +97,9 @@ public class Movement {
 
         Movement bestMovement = null;
         if(movementColor == playerColor){
-            bestMovement = maxValue(simulator, board, nextDepth, possibleMovements, boardStateCounts, alpha, beta);
+            bestMovement = maxValue(simulator, board, nextDepth, possibleMovements, boardStateCounts);
         }else{
-            bestMovement = minValue(simulator, board, nextDepth, possibleMovements, boardStateCounts, alpha, beta);
+            bestMovement = minValue(simulator, board, nextDepth, possibleMovements, boardStateCounts);
         }
 
         if(this.movementType != null)
@@ -99,18 +107,19 @@ public class Movement {
         return bestMovement;
     }
 
-    public Movement maxValue(PylosGameSimulator simulator, PylosBoard board, int nextDepth , ArrayList<Movement> possibleMovements, HashMap<Long, Integer> boardStateCounts, int alpha, int beta){
+    public Movement maxValue(PylosGameSimulator simulator, PylosBoard board, int nextDepth , ArrayList<Movement> possibleMovements, HashMap<Long, Integer> boardStateCounts){
         Movement bestMovement = null;
         if(nextDepth > MAX_TREE_DEPTH)
             return null;
         this.movementScore = Integer.MIN_VALUE;
         for(Movement possibleMovement : possibleMovements){
-            possibleMovement.simulate(simulator, board, nextDepth, false, boardStateCounts, alpha, beta);
+            possibleMovement.simulate(simulator, board, nextDepth, false, boardStateCounts);
             if(this.movementScore < possibleMovement.movementScore){
                 bestMovement = possibleMovement;
             }
             this.movementScore = Math.max(this.movementScore, possibleMovement.movementScore);
-            alpha = Math.max(alpha, possibleMovement.movementScore);
+            this.beta = Math.min(beta, possibleMovement.beta);
+            this.alpha = Math.max(alpha, possibleMovement.alpha);
             if (beta <= alpha)
                 break;
         }
@@ -118,18 +127,19 @@ public class Movement {
         return bestMovement;
     }
 
-    public Movement minValue(PylosGameSimulator simulator, PylosBoard board, int nextDepth , ArrayList<Movement> possibleMovements, HashMap<Long, Integer> boardStateCounts, int alpha, int beta){
+    public Movement minValue(PylosGameSimulator simulator, PylosBoard board, int nextDepth , ArrayList<Movement> possibleMovements, HashMap<Long, Integer> boardStateCounts){
         Movement bestMovement = null;
         this.movementScore = Integer.MAX_VALUE;
         if(nextDepth > MAX_TREE_DEPTH)
             return null;
         for(Movement possibleMovement : possibleMovements){
-            possibleMovement.simulate(simulator, board, nextDepth, false, boardStateCounts, alpha, beta);
+            possibleMovement.simulate(simulator, board, nextDepth, false, boardStateCounts);
             if(this.movementScore > possibleMovement.movementScore){
                 bestMovement = possibleMovement;
             }
             this.movementScore = Math.min(this.movementScore, possibleMovement.movementScore);
-            beta = Math.min(beta, possibleMovement.movementScore);
+            this.alpha = Math.max(alpha, possibleMovement.alpha);
+            this.beta = Math.min(beta, possibleMovement.beta);
             if (beta <= alpha)
                 break;
         }
