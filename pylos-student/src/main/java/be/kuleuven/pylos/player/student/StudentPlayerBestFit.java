@@ -2,6 +2,7 @@ package be.kuleuven.pylos.player.student;
 
 import be.kuleuven.pylos.game.*;
 import be.kuleuven.pylos.player.PylosPlayer;
+import be.kuleuven.pylos.player.PylosPlayerObserver;
 
 import java.util.HashMap;
 

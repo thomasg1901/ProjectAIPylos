@@ -2,9 +2,10 @@ package be.kuleuven.pylos.player.student;
 
 import be.kuleuven.pylos.game.*;
 
-import java.sql.SQLOutput;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Objects;
 
 public class Movement {
 
@@ -20,10 +21,10 @@ public class Movement {
     private PylosGameState state;
     private PylosGameState prevState;
 
-    private int movementScore;
+    private double movementScore;
     private final int MAX_BOARD_STATE_COUNT = 3;
 
-    private final int MAX_TREE_DEPTH = 6;
+    private final int MAX_TREE_DEPTH = 7;
     private final boolean PRUNING = true;
 
 
@@ -42,7 +43,7 @@ public class Movement {
         this.state = state;
     }
 
-    public Movement simulate(PylosGameSimulator simulator, PylosBoard board, int depth, boolean initialMovement, HashMap<Long, Integer> boardStateCounts, int alpha, int beta){
+    public Movement simulate(PylosGameSimulator simulator, PylosBoard board, int depth, boolean initialMovement, HashMap<Long, Integer> boardStateCounts, double alpha, double beta){
         if(depth > MAX_TREE_DEPTH){
             this.movementScore = Integer.MIN_VALUE;
             return null;
@@ -103,7 +104,7 @@ public class Movement {
         return bestMovement;
     }
 
-    public Movement maxValue(PylosGameSimulator simulator, PylosBoard board, int nextDepth , ArrayList<Movement> possibleMovements, HashMap<Long, Integer> boardStateCounts, int alpha, int beta){
+    public Movement maxValue(PylosGameSimulator simulator, PylosBoard board, int nextDepth , ArrayList<Movement> possibleMovements, HashMap<Long, Integer> boardStateCounts, double alpha, double beta){
         Movement bestMovement = null;
         if(nextDepth > MAX_TREE_DEPTH)
             return null;
@@ -122,7 +123,7 @@ public class Movement {
         return bestMovement;
     }
 
-    public Movement minValue(PylosGameSimulator simulator, PylosBoard board, int nextDepth , ArrayList<Movement> possibleMovements, HashMap<Long, Integer> boardStateCounts, int alpha, int beta){
+    public Movement minValue(PylosGameSimulator simulator, PylosBoard board, int nextDepth , ArrayList<Movement> possibleMovements, HashMap<Long, Integer> boardStateCounts, double alpha, double beta){
         Movement bestMovement = null;
         this.movementScore = Integer.MAX_VALUE;
         if(nextDepth > MAX_TREE_DEPTH)
@@ -156,10 +157,12 @@ public class Movement {
         return false;
     }
 
-    private int evaluateState(PylosBoard board){
+    private double evaluateState(PylosBoard board){
         int ourReserve = board.getReservesSize(this.playerColor);
         int enemyReserve = board.getReservesSize(this.playerColor.other());
-        return ourReserve - enemyReserve;
+        double ourMovements = getPossibleMovements(board, state, playerColor).size();
+        double enemyMovements = getPossibleMovements(board, state, playerColor.other()).size();
+        return 0.8*(ourReserve - enemyReserve) + 0.2*(ourMovements - enemyMovements);
     }
 
 
@@ -184,6 +187,8 @@ public class Movement {
                 }
             }
         }
+        //Collections.sort(possibleMovements);
+        Collections.shuffle(possibleMovements);
         return possibleMovements;
     }
 
@@ -314,11 +319,11 @@ public class Movement {
         this.state = state;
     }
 
-    public int getMovementScore() {
+    public double getMovementScore() {
         return movementScore;
     }
 
-    public void setMovementScore(int movementScore) {
+    public void setMovementScore(double movementScore) {
         this.movementScore = movementScore;
     }
 
